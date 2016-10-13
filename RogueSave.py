@@ -3,7 +3,10 @@ import shutil
 import re
 import os
 
-items = {
+INVENTORY_SLOTS = 45
+STORAGE_SLOTS = 360
+ITEMS = {
+    0:"Empty",
     1:"Planet Stone",
     2:"Orichalcum",
     3:"Galacticite",
@@ -538,28 +541,283 @@ items = {
     2610:"Darkweapon Badge",
     2611:"Zeig Badge"
 }
+RACES = {
+    0:"Wanderer",
+    1:"Royalite",
+    2:"Centurion",
+    3:"Illuminate",
+    4:"Shlaami",
+    5:"Fishfolk",
+    6:"Gekko",
+    7:"Nomad",
+    8:"Deathrazor",
+    9:"Hiveling",
+    10:"Ancient",
+    11:"Lightsworn",
+    12:"Drifter",
+    13:"Goblin",
+    14:"Swampfolk",
+    15:"Tiki",
+    16:"Titan",
+    17:"Trogon",
+    18:"Scaled",
+    19:"Florbgon",
+    20:"Oompa",
+    21:"Wizened",
+    22:"Necro",
+    23:"Golem",
+    24:"Avalancher",
+    25:"Boogoo",
+    26:"Afflicted",
+    27:"Runefolk",
+    28:"Overseer",
+    29:"Bunyip"
+}
+UNIFORMS = {
+    0:"Fleet Cadet",
+    1:"Hero",
+    2:"Scholar",
+    3:"Explorer",
+    4:"Pyromancer",
+    5:"Fairy",
+    6:"Seer",
+    7:"Soldier",
+    8:"Blacksmith",
+    9:"President",
+    10:"Gadget Worker",
+    11:"Minister",
+    12:"Antihero",
+    13:"Dirtmage",
+    14:"Beehive",
+    15:"Monster Trainer",
+    16:"Scientist",
+    17:"Crusader",
+    18:"Echo",
+    19:"Metalgear",
+    20:"Pheonix",
+    21:"Cobalt Mage",
+    22:"Peasant",
+    23:"Overworld"
+}
+TRAITS = {
+    0:"Vitality",
+    1:"Strength",
+    2:"Dexterity",
+    3:"Tech",
+    4:"Magic",
+    5:"Faith"
+}
+CLASSES = {
+    0:"Enforcer",
+    1:"Gunner",
+    2:"Machinist",
+    3:"Darkmage",
+    4:"Aethermage",
+    5:"Blademaster",
+    6:"Dragoon",
+    7:"Spellblade",
+    8:"Aetherknight",
+    9:"Bounty Hunter",
+    10:"Gunmage",
+    11:"Commander",
+    12:"Datamancer",
+    13:"Alchemist",
+    14:"Arcanist"
+}
+AUGMENTS = {
+    0:"None",
+    1:"Crusader Hat",
+    2:"Rogue Bandana",
+    3:"Berserker Scarf",
+    4:"Mage Hat",
+    5:"Crown",
+    6:"Shmoo Hat",
+    7:"Glibglob Hat",
+    8:"Beats by Boizu",
+    9:"Eyepod Hat",
+    10:"Slime Hat",
+    11:"Mech City Beanie",
+    12:"Lucky Pumpkin",
+    13:"Eye Gadget",
+    14:"Baby Silver",
+    15:"Oculus Goggles",
+    16:"Chamcham Hat",
+    17:"Demon Horns",
+    18:"Forsaker Mask",
+    19:"Shroom Hat",
+    20:"Halo",
+    21:"Creator Mask",
+    22:"Rebellion Headpiece",
+    23:"Gas Mask"
+}
+ALLEGIANCES = {
+    0:"Galatic Fleet",
+    1:"Starlight Rebellion",
+    2:"Church of Faust",
+    3:"Gray Enigma",
+    4:"Junkbelt Mercenaries",
+    5:"Droidtech Enterprise"
+}
 
-saveDirectory = os.getenv("APPDATA") + "/../LocalLow/DefaultCompany/Roguelands"
-shutil.copy(saveDirectory + "/PlayerPrefs.txt", saveDirectory + "/PlayerPrefs %s.bak" % datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S"))
+class Save:
+    """
+    Save data for one PlayerPrefs file.
+    saveFilePath: the absolute path to the save file
+    """
 
-with open(saveDirectory + "/PlayerPrefs.txt") as saveFile:
-    saveFileContents = saveFile.read()
+    def __init__(self, saveFilePath):
+        #shutil.copy(saveFilePath, saveFilePath + " %s.bak" % datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S"))
+        with open(saveFilePath) as saveFile:
+            saveFileContents = saveFile.read()
+            saveFileContents = re.sub(r"\s", "", saveFileContents)
+            self.saveContents = dict(item.split(":", 1) for item in saveFileContents.split(";"))
+            for key in list(self.saveContents.keys()):
+                self.saveContents[key] = self.saveContents[key].split(":")[0]
 
-saveFileContents = re.sub(r"\s", "", saveFileContents)
-saveContents = dict(item.split(":", 1) for item in saveFileContents.split(";"))
+        self.characters = list()
+        for key in list(self.saveContents.keys()):
+            if "name" in key:
+                i = int(key[0])
+                self.characters.append(Character(self, i))
 
-def numChars():
-    count = 0
-    for key in list(saveContents.keys()):
-        if re.match(r"\dname", key):
-            count += 1
-    return count
+        self.storageLevel = int(self.saveContents["storageLevel"])
+        self.storage = list()
+        for i in range(STORAGE_SLOTS):
+            itemId = int(self.saveContents["storage%iid" % i])
+            tier = int(self.saveContents["storage%itier" % i])
+            quantity = int(self.saveContents["storage%iq" % i])
+            exp = int(self.saveContents["storage%iexp" % i])
+            self.storage.append(Item(itemId, tier, quantity, exp))
 
-def charName(index):
-    for key in list(saveContents.keys()):
-        if key == "%iname" % index:
-            return saveContents[key]
 
-print(numChars())
-for i in range(numChars()):
-    print(charName(i))
+class Character:
+    """
+    A character and its inventory.
+    save: save instance containing this character
+    id: the character's id
+    """
+
+    def __init__(self, save, id):
+        self.id = id
+        self.name = save.saveContents["%iname" % id]
+        self.level = int(save.saveContents["%ilevel" % id])
+        self.hp = int(save.saveContents["%ihp" % id])
+        self.mana = int(save.saveContents["%imana" % id])
+        self.race = int(save.saveContents["%irace" % id])
+        self.variant = int(save.saveContents["%ivariant" % id])
+        self.uniform = int(save.saveContents["%iuniform" % id])
+        self.trait0 = int(save.saveContents["%itrait0" % id])
+        self.trait1 = int(save.saveContents["%itrait1" % id])
+        self.lifetime = int(save.saveContents["%ilifetime" % id])
+        self.exp = int(save.saveContents["%iexp" % id])
+        self.augment = int(save.saveContents["%iaugment" % id])
+        self.traitClass = int(save.saveContents["%iclass" % id])
+        self.allegience = int(save.saveContents["%iallegiance" % id])
+        self.vitality = int(save.saveContents["%ipStat0" % id])
+        self.strength = int(save.saveContents["%ipStat1" % id])
+        self.dexterity = int(save.saveContents["%ipStat2" % id])
+        self.tech = int(save.saveContents["%ipStat3" % id])
+        self.magic = int(save.saveContents["%ipStat4" % id])
+        self.faith = int(save.saveContents["%ipStat5" % id])
+
+        self.inventory = list()
+        for i in range(INVENTORY_SLOTS):
+            itemId = int(save.saveContents["%i%iid" % (id, i)])
+            tier = int(save.saveContents["%i%itier" % (id, i)])
+            quantity = int(save.saveContents["%i%iq" % (id, i)])
+            exp = int(save.saveContents["%i%iexp" % (id, i)])
+            self.inventory.append(Item(itemId, tier, quantity, exp))
+
+class Item:
+    """
+    An item and its stats.
+    id: the item's id
+    tier: the items's tier
+    quanitity: the item's quanitity
+    exp: the item's experience
+    """
+
+    def __init__(self, id, tier, quantity, exp):
+        self.id = id
+        self.tier = tier
+        self.quantity = quantity
+        self.exp = exp
+
+def characterSelect(save):
+    """
+    Display the save's characters and storage and allow the user to choose
+    one to interact with.
+    save: the save instance to use
+    """
+
+    for i in range(len(save.characters)):
+        print("%i: %s" % (i, save.characters[i].name))
+    print("%i: Storage" % len(save.characters))
+    print("--")
+
+    try:
+        choice = int(input("Choice: "))
+        if choice < 0 or choice > len(save.characters):
+            raise ValueError
+    except ValueError:
+        print("Please select one of the options listed.")
+        characterSelect(save)
+        return
+
+    if choice == len(save.characters):
+        showStorage(save)
+    else:
+        showCharacter(save, choice)
+
+def showStorage(save):
+    """
+    Display the items in and properties of a save's storage and allow the user
+    to choose one to interact with.
+    save: the save instance to use
+    """
+
+    print("storage")
+    print("--")
+
+def showCharacter(save, id):
+    """
+    Display the properties of a character in a save and allow the user to choose
+    one to interact with.
+    save: the save instance to use
+    id: the character's id
+    """
+
+    print("character %i" % id)
+    print("--")
+
+def showInventory(save, id):
+    """
+    Display the items in a character's inventory and allow the user to choose
+    one to interact with.
+    save: the save instance to use
+    id: the character's id
+    """
+
+    print("character %i's inventory" % id)
+    print("--")
+
+def showItem(save, loc, slot):
+    """
+    Display the properties of an item in an inventory and allow the user to
+    choose one to interact with.
+    save: the save instance to use
+    loc: the id of the character containing the inventory, or -1 for storage
+    slot: the slot the item is in
+    """
+
+    print("item in slot %i in loc %i" % (slot, loc))
+    print("--")
+
+def main():
+    saveDirectory = os.getenv("APPDATA") + "/../LocalLow/DefaultCompany/Roguelands"
+    save = Save(saveDirectory + "/PlayerPrefs.txt")
+
+    characterSelect(save)
+
+if __name__ == "__main__":
+    main()
