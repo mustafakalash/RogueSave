@@ -1,10 +1,22 @@
 import datetime
 import shutil
-import re
 import os
 
+"""The amount of slots inventory slot a character has, including equipment."""
 INVENTORY_SLOTS = 45
+"""The amount of storage slots a save has."""
 STORAGE_SLOTS = 360
+"""The amount of combat chip slots a character has, including the hot bar."""
+COMBAT_CHIP_SLOTS = 38
+"""The amount of quests a save can have."""
+QUEST_SLOTS = 3
+"""The maximum number of ship droids."""
+SHIP_DROID_SLOTS = 6
+"""The amount of storage slots for ship droids."""
+SHIP_DROID_STORAGE_SLOTS = 9
+"""The length of one dimension of the ship's square area."""
+SHIP_SIZE = 64
+"""The items and their IDs."""
 ITEMS = {
     0:"Empty",
     1:"Planet Stone",
@@ -507,7 +519,7 @@ ITEMS = {
     2521:"Ancient Guard Card",
     2522:"Ancient Beast Card",
     2523:"Roach Card",
-    2524:"Card",
+    2524:"Ancient Golem Card",
     2525:"Squirm Card",
     2526:"Plague Caster Card",
     2527:"Glitterbug Card",
@@ -541,6 +553,7 @@ ITEMS = {
     2610:"Darkweapon Badge",
     2611:"Zeig Badge"
 }
+"""The available races, sorted by ID."""
 RACES = [
     "Wanderer",
     "Royalite",
@@ -573,6 +586,7 @@ RACES = [
     "Overseer",
     "Bunyip"
 ]
+"""The available uniforms, sorted by ID."""
 UNIFORMS = [
     "Fleet Cadet",
     "Hero",
@@ -599,6 +613,7 @@ UNIFORMS = [
     "Peasant",
     "Overworld"
 ]
+"""The available traits, sorted by ID."""
 TRAITS = [
     "Vitality",
     "Strength",
@@ -607,6 +622,7 @@ TRAITS = [
     "Magic",
     "Faith"
 ]
+"""The available classes, sorted by ID."""
 CLASSES = [
     "Enforcer",
     "Gunner",
@@ -624,6 +640,7 @@ CLASSES = [
     "Alchemist",
     "Arcanist"
 ]
+"""The available augments, sorted by ID."""
 AUGMENTS = [
     "None",
     "Crusader Hat",
@@ -650,6 +667,7 @@ AUGMENTS = [
     "Rebellion Headpiece",
     "Gas Mask"
 ]
+"""The available allegiences, sorted by ID."""
 ALLEGIANCES = [
     "Galatic Fleet",
     "Starlight Rebellion",
@@ -658,27 +676,194 @@ ALLEGIANCES = [
     "Junkbelt Mercenaries",
     "Droidtech Enterprise"
 ]
+"""The available mods, sorted by ID."""
+MODS = [
+    "Empty",
+    "BonusVIT+",
+    "BonusSTR+",
+    "BonusDEX+",
+    "BonusTEC+",
+    "BonusMAG+",
+    "BonusFTH+",
+    "ProjectileRange+",
+    "CritRate+",
+    "CritDmg+",
+    "HealthRegen+",
+    "ManaRegen+",
+    "StaminaRegen+",
+    "MoveSpeed+",
+    "DashSpeed+",
+    "JumpHeight+",
+    "OreHarvest+",
+    "PlantHarvest+",
+    "BugHarvest+",
+    "MonsterDrops+",
+    "ExpBoost+",
+    "CreditBoost+",
+    "ResistHeat+",
+    "ResistFrost+",
+    "ResistPoision+"
+]
+"""The available combat chips and their IDs."""
+COMBAT_CHIPS = {
+    0:"Empty",
+    1:"Swiftness",
+    2:"Vitality I",
+    52:"Vitality II",
+    102:"Vitality X",
+    3:"Strength I",
+    53:"Stength II",
+    103:"Strength X",
+    4:"Dexterity I",
+    54:"Dexterity II",
+    104:"Dexterity X",
+    5:"Tech I",
+    55:"Tech II",
+    105:"Tech X",
+    6:"Intelligence I",
+    56:"Intelligence II",
+    106:"Intelligence X",
+    7:"Faith I",
+    57:"Faith II",
+    107:"Faith X",
+    8:"Photon Blade",
+    9:"Dancing Slash",
+    10:"Triple Shot",
+    11:"Atalanta's Eye",
+    12:"Plasma Grenade",
+    13:"Gadget Turret",
+    14:"Blaze",
+    15:"Shock",
+    16:"Healing Ward",
+    17:"Bubble",
+    18:"Berserk",
+    19:"Megaslash",
+    20:"Hyperbeam",
+    21:"Trickster",
+    22:"Quadracopter",
+    23:"Cluster Bomber",
+    24:"Inferno",
+    25:"Enhanced Mind",
+    26:"Angelic Augur",
+    27:"Prism",
+    38:"Darkfire"
+}
+"""The monsters."""
+MONSTERS = [
+    "Error",
+    "Shmoo",
+    "Eyepod",
+    "Dunebug",
+    "Worm",
+    "Wasp",
+    "Urugorak",
+    "Sluglord",
+    "Slugmother",
+    "Chamcham",
+    "Rhinobug",
+    "Hivemind",
+    "Glibglob",
+    "Slime",
+    "Rock Spider",
+    "Sploopy",
+    "Rock Scarab",
+    "Shroom",
+    "Blue Shroom",
+    "Shroom Bully",
+    "Relicfish",
+    "Ancient Guard",
+    "Ancient Beast",
+    "Roach",
+    "Ancient Golem",
+    "Squirm",
+    "Plague Caster",
+    "Glitterbug",
+    "Plaguebeast",
+    "Space Pirate",
+    "Wicked",
+    "Wisp",
+    "Yeti",
+    "Mammoth",
+    "Wyvern",
+    "Lava Blob",
+    "Fire Slime",
+    "Lava Dragon",
+    "Tyrannog",
+    "Beelzeblob",
+    "Gruu",
+    "Treant",
+    "Willowwart",
+    "Caius",
+    "Moloch"
+]
 
 class Save:
     """
     Save data for one PlayerPrefs file.
+
     saveFilePath: the absolute path to the save file
     """
 
     def __init__(self, saveFilePath):
-        #shutil.copy(saveFilePath, saveFilePath + " %s.bak" % datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S"))
+        #shutil.copy(saveFilePath, %s + " %s.bak"
+        #   % (saveFilePath,
+        #   datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S")))
         with open(saveFilePath) as saveFile:
             saveFileContents = saveFile.read()
-            saveFileContents = re.sub(r"\s", "", saveFileContents)
-            self.saveContents = dict(item.split(":", 1) for item in saveFileContents.split(";"))
+            saveFileContents = saveFileContents.replace(" ", "")
+            self.saveContents = dict(item.split(":", 1)
+                for item in saveFileContents.split(";"))
             for key in list(self.saveContents.keys()):
                 self.saveContents[key] = self.saveContents[key].split(":")[0]
 
         self.characters = list()
         for key in list(self.saveContents.keys()):
             if "name" in key:
-                i = int(key[0])
-                self.characters.append(Character(self, i))
+                charId = int(key[0])
+                name = self.saveContents["%iname" % charId]
+                level = int(self.saveContents["%ilevel" % charId])
+                hp = int(self.saveContents["%ihp" % charId])
+                mana = int(self.saveContents["%imana" % charId])
+                race = int(self.saveContents["%irace" % charId])
+                variant = int(self.saveContents["%ivariant" % charId])
+                uniform = int(self.saveContents["%iuniform" % charId])
+                trait0 = int(self.saveContents["%itrait0" % charId])
+                trait1 = int(self.saveContents["%itrait1" % charId])
+                lifetime = int(self.saveContents["%ilifetime" % charId])
+                exp = int(self.saveContents["%iexp" % charId])
+                augment = int(self.saveContents["%iaugment" % charId])
+                traitClass = int(self.saveContents["%iclass" % charId])
+                allegience = int(self.saveContents["%iallegiance" % charId])
+                vitality = int(self.saveContents["%ipStat0" % charId])
+                strength = int(self.saveContents["%ipStat1" % charId])
+                dexterity = int(self.saveContents["%ipStat2" % charId])
+                tech = int(self.saveContents["%ipStat3" % charId])
+                magic = int(self.saveContents["%ipStat4" % charId])
+                faith = int(self.saveContents["%ipStat5" % charId])
+
+                inventory = list()
+                for i in range(INVENTORY_SLOTS):
+                    itemId = int(self.saveContents["%i%iid" % (charId, i)])
+                    tier = int(self.saveContents["%i%itier" % (charId, i)])
+                    quantity = int(self.saveContents["%i%iq" % (charId, i)])
+                    exp = int(self.saveContents["%i%iexp" % (charId, i)])
+                    mod0 = int(self.saveContents["%i%ia0" % (charId, i)])
+                    mod1 = int(self.saveContents["%i%ia1" % (charId, i)])
+                    mod2 = int(self.saveContents["%i%ia2" % (charId, i)])
+                    modL0 = int(self.saveContents["%i%iaL0" % (charId, i)])
+                    modL1 = int(self.saveContents["%i%iaL1" % (charId, i)])
+                    modL2 = int(self.saveContents["%i%iaL2" % (charId, i)])
+                    inventory.append(Item(itemId, tier, quantity, exp, mod0,
+                        mod1, mod2, modL0, modL1, modL2))
+
+                combatChips = list()
+                for i in range(COMBAT_CHIP_SLOTS):
+                    combatChips.append(int(self.saveContents["%icc%i" % (charId, i)]))
+
+                self.characters.append(Character(charId, name, level, hp, mana,
+                    race, variant, uniform, trait0, trait1, lifetime, exp,
+                    augment, traitClass, allegience, vitality, strength,
+                    dexterity, tech, magic, faith, inventory))
 
         self.storageLevel = int(self.saveContents["storageLevel"])
         self.storage = list()
@@ -687,66 +872,185 @@ class Save:
             tier = int(self.saveContents["storage%itier" % i])
             quantity = int(self.saveContents["storage%iq" % i])
             exp = int(self.saveContents["storage%iexp" % i])
-            self.storage.append(Item(itemId, tier, quantity, exp))
+            mod0 = int(self.saveContents["storage%ia0" % i])
+            mod1 = int(self.saveContents["storage%ia1" % i])
+            mod2 = int(self.saveContents["storage%ia2" % i])
+            modL0 = int(self.saveContents["storage%iaL0" % i])
+            modL1 = int(self.saveContents["storage%iaL1" % i])
+            modL2 = int(self.saveContents["storage%iaL2" % i])
+            self.storage.append(Item(itemId, tier, quantity, exp, mod0, mod1,
+                mod2, modL0, modL1, modL2))
 
+        self.shipDroids = list()
+        for i in range(SHIP_DROID_SLOTS):
+            self.shipDroids.append(int(self.saveContents["sd%i" % i]))
+        self.shipDroidStorage = list()
+        for i in range(SHIP_DROID_STORAGE_SLOTS):
+            itemId = int(self.saveContents["gather%iid" % i])
+            tier = int(self.saveContents["gather%itier" % i])
+            quantity = int(self.saveContents["gather%iq" % i])
+            exp = int(self.saveContents["gather%iexp" % i])
+            mod0 = int(self.saveContents["gather%ia0" % i])
+            mod1 = int(self.saveContents["gather%ia1" % i])
+            mod2 = int(self.saveContents["gather%ia2" % i])
+            modL0 = int(self.saveContents["gather%iaL0" % i])
+            modL1 = int(self.saveContents["gather%iaL1" % i])
+            modL2 = int(self.saveContents["gather%iaL2" % i])
+            self.shipDroidStorage.append(Item(itemId, tier, quantity, exp, mod0,
+            mod1, mod2, modL0, modL1, modL2))
+
+        self.questsCompleted = self.saveContents["qCompleted"]
+        self.quests = list()
+        for i in range(QUEST_SLOTS):
+            qType = int(self.saveContents["%iqType" % i])
+            tier = int(self.saveContents["%iqTier" % i])
+            level = int(self.saveContents["%iqChallenge" % i])
+            thingId = int(self.saveContents["%iqThingID" % i])
+            thingQ = int(self.saveContents["%iqNumberOf" % i])
+            progress = int(self.saveContents["%iqNumberOf2" % i])
+            rewardId = int(self.saveContents["%iqRewardID" % i])
+            rewardQ = int(self.saveContents["%iqRewardQ" % i])
+            self.quests.append(Quest(i, qType, tier, level, thingId, thingQ,
+                progress, rewardId, rewardQ))
+
+        self.shipWalls = list()
+        self.shipBlocks = list()
+        self.shipItems = list()
+        for x in range(SHIP_SIZE):
+            for y in range(SHIP_SIZE):
+                self.shipWalls.append(
+                    ShipPart(int(self.saveContents["wallx%iy%i" % (x, y)]), x, y))
+                self.shipBlocks.append(
+                    ShipPart(int(self.saveContents["gridx%iy%i" % (x, y)]), x, y))
+                self.shipItems.append(
+                    ShipPart(int(self.saveContents["gridSx%iy%i" % (x, y)]), x, y))
 
 class Character:
     """
     A character and its inventory.
-    save: save instance containing this character
+
     id: the character's id
+    name: the character's name
+    level: the character's level
+    hp: the character's hp
+    mana: the character's mana
+    race: the character's race
+    variant: the character's race variant
+    uniform: the character's uniform
+    trait0: the character's first main stat
+    trait1: the character's second main stat
+    lifetime: the amount of time the character has been played
+    exp: the exp the character has
+    augment: the character's augment
+    traitClass: the character's class, based on its traits
+    allegience: the character's faction allegience
+    vitality: the character's vitality stat
+    strength: the character's strength stat
+    dexterity: the character's dexterity stat
+    tech: the charactter's tech stat
+    magic: the character's magic stat
+    faith: the character's faith stat
+    inventory: a list containing the character's Items
+    combatChips: a list containing the character's combat chips
     """
 
-    def __init__(self, save, id):
+    def __init__(self, id, name, level, hp, mana, race, variant, uniform,
+        trait0, trait1, lifetime, exp, augment, traitClass, allegience,
+        vitality, strength, dexterity, tech, magic, faith, inventory):
         self.id = id
-        self.name = save.saveContents["%iname" % id]
-        self.level = int(save.saveContents["%ilevel" % id])
-        self.hp = int(save.saveContents["%ihp" % id])
-        self.mana = int(save.saveContents["%imana" % id])
-        self.race = int(save.saveContents["%irace" % id])
-        self.variant = int(save.saveContents["%ivariant" % id])
-        self.uniform = int(save.saveContents["%iuniform" % id])
-        self.trait0 = int(save.saveContents["%itrait0" % id])
-        self.trait1 = int(save.saveContents["%itrait1" % id])
-        self.lifetime = int(save.saveContents["%ilifetime" % id])
-        self.exp = int(save.saveContents["%iexp" % id])
-        self.augment = int(save.saveContents["%iaugment" % id])
-        self.traitClass = int(save.saveContents["%iclass" % id])
-        self.allegience = int(save.saveContents["%iallegiance" % id])
-        self.vitality = int(save.saveContents["%ipStat0" % id])
-        self.strength = int(save.saveContents["%ipStat1" % id])
-        self.dexterity = int(save.saveContents["%ipStat2" % id])
-        self.tech = int(save.saveContents["%ipStat3" % id])
-        self.magic = int(save.saveContents["%ipStat4" % id])
-        self.faith = int(save.saveContents["%ipStat5" % id])
-
-        self.inventory = list()
-        for i in range(INVENTORY_SLOTS):
-            itemId = int(save.saveContents["%i%iid" % (id, i)])
-            tier = int(save.saveContents["%i%itier" % (id, i)])
-            quantity = int(save.saveContents["%i%iq" % (id, i)])
-            exp = int(save.saveContents["%i%iexp" % (id, i)])
-            self.inventory.append(Item(itemId, tier, quantity, exp))
+        self.name = name
+        self.level = level
+        self.hp = hp
+        self.mana = mana
+        self.race = race
+        self.variant = variant
+        self.uniform = uniform
+        self.trait0 = trait0
+        self.trait1 = trait1
+        self.lifetime = lifetime
+        self.exp = exp
+        self.augment = augment
+        self.traitClass = traitClass
+        self.allegience = allegience
+        self.vitality = vitality
+        self.strength = strength
+        self.dexterity = dexterity
+        self.tech = tech
+        self.magic = magic
+        self.faith = faith
+        self.inventory = inventory
 
 class Item:
     """
     An item and its stats.
+
     id: the item's id
     tier: the items's tier
     quanitity: the item's quanitity
     exp: the item's experience
+    mod0, mod1, mod2: the mods installed in the item
+    modL0, modL1, modL2: the levels of the mods installed in the item
     """
 
-    def __init__(self, id, tier, quantity, exp):
+    def __init__(self, id, tier, quantity, exp, mod0, mod1, mod2, modL0, modL1,
+        modL2):
         self.id = id
         self.tier = tier
         self.quantity = quantity
         self.exp = exp
+        self.mod0 = mod0
+        self.mod1 = mod1
+        self.mod2 = mod2
+        self.modL0 = modL0
+        self.modL1 = modL1
+        self.modL2 = modL2
+
+class Quest:
+    """
+    A quest and its information.
+
+    id: the quest's id
+    type: the quest's type
+    tier: the quest's tier
+    level: the quest's challenge level
+    thingId: the id of the item or mob needed to complete the quest
+    thingQ: the amount of items or kills needed to complete the quest
+    progress: the amount of items or kills already completed
+    rewardId: the id of the item given for completing the quest
+    rewardQ: the amount of the item given for completing the quest
+    """
+
+    def __init__(self, id, type, tier, level, thingId, thingQ, progress,
+    rewardId, rewardQ):
+        self.id = id
+        self.type = type
+        self.tier = tier
+        self.level = level
+        self.thingId = thingId
+        self.thingQ = thingQ
+        self.progress = progress
+        self.rewardId = rewardId
+        self.rewardQ = rewardQ
+
+class ShipPart:
+    """
+    An item, block, or background wall placed in the ship.
+
+    id: the id of the part
+    x: the x coordinate of the part
+    y: the y coordinate of the part
+    """
+
+    def __init__(self, id, x, y):
+        self.id = id
+        self.x = x
+        self.y = y
 
 def characterSelect(save):
     """
     Display the save's characters and storage and allow the user to choose
     one to interact with.
+
     save: the save instance to use
     """
 
@@ -773,6 +1077,7 @@ def showStorage(save):
     """
     Display the items in and properties of a save's storage and allow the user
     to choose one to interact with.
+
     save: the save instance to use
     """
 
@@ -783,6 +1088,7 @@ def showCharacter(save, id):
     """
     Display the properties of a character in a save and allow the user to choose
     one to interact with.
+
     save: the save instance to use
     id: the character's id
     """
@@ -794,6 +1100,7 @@ def showInventory(save, id):
     """
     Display the items in a character's inventory and allow the user to choose
     one to interact with.
+
     save: the save instance to use
     id: the character's id
     """
@@ -805,6 +1112,7 @@ def showItem(save, loc, slot):
     """
     Display the properties of an item in an inventory and allow the user to
     choose one to interact with.
+
     save: the save instance to use
     loc: the id of the character containing the inventory, or -1 for storage
     slot: the slot the item is in
